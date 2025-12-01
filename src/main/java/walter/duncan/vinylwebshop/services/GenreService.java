@@ -1,108 +1,42 @@
 package walter.duncan.vinylwebshop.services;
 
-import walter.duncan.vinylwebshop.entities.Genre;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import walter.duncan.vinylwebshop.entities.GenreEntity;
+import walter.duncan.vinylwebshop.repositories.GenreRepository;
+
 import java.util.List;
 
-/**
- * Deze GenreService is een tijdelijke oplossing om een echte GenreService na te bootsen.
- * In de volgende les zul je deze GenreService moeten aanpassen of een nieuwe GenreService maken,
- * zodat het gebruik maakt van een database in plaats van een ArrayList.
- * De beschikbare methodes in deze Service zijn:
- * - findAllGenres
- * - findGenreById
- * - createGenre
- * - updateGenre
- * - deleteGenre
- */
 @Service
-public class GenreService {
-    private final ArrayList<Genre> genreRepository;
-
-    public GenreService() {
-        genreRepository = new ArrayList<>();
+public class GenreService extends BaseService<GenreEntity, Long> {
+    public GenreService(GenreRepository genreRepository) {
+        super(genreRepository);
     }
 
-    /**
-     * Haalt alle record uit de mock-database op.
-     * Als de mock-database leeg is, wordt een lege lijst geretourneerd.
-     *
-     * @return
-     */
-    public List<Genre> findAllGenres() {
-        return genreRepository;
+    public List<GenreEntity> findAllGenres() {
+        return this.repository.findAll();
     }
 
-    /**
-     * Haalt een bestaande Genre-record op uit de mock-database op basis van het id.
-     * Als er geen record bestaat met dat id, wordt een Exception opgegooid.
-     *
-     * @param id
-     * @return
-     */
-    public Genre findGenreById(Long id) {
-        return genreRepository.stream().filter(g -> g.getId().equals(id)).findFirst().orElseThrow(() -> new IndexOutOfBoundsException("Genre met ID " + id + " niet gevonden"));
+    public GenreEntity findGenreById(Long id) {
+        return this.getExistingById(id);
     }
 
-    /**
-     * Slaat een nieuw Genre-record op in de mock-database en maakt daarbij een uniek ID aan voor het object.
-     *
-     * @param genre Het te creëren en op te slaan genre. Moet niet `null` zijn.
-     * @return Het opgeslagen Genre-object met het toegekende id.
-     */
-    public Genre createGenre(Genre genre) {
-        genre.setId(findNextId(genreRepository));
-        genreRepository.add(genre);
+    public GenreEntity createGenre(GenreEntity genreEntity) {
+        genreEntity.clearId();
 
-        return genre;
+        return this.repository.save(genreEntity);
     }
 
-    /**
-     * Update een bestaande Genre-record uit de mock-database op basis van het id.
-     *
-     * @param id
-     * @param genreInput
-     * @return
-     */
-    public Genre updateGenre(Long id, Genre genreInput) {
-        Genre existingGenreEntity = findGenreById(id);
+    public GenreEntity updateGenre(Long id, GenreEntity genreEntity) {
+        var persistedEntity = this.getExistingById(id);
+        persistedEntity.setName(genreEntity.getName());
+        persistedEntity.setDescription(genreEntity.getDescription());
 
-        existingGenreEntity.setName(genreInput.getName());
-        existingGenreEntity.setDescription(genreInput.getDescription());
-
-        return existingGenreEntity;
+        return this.repository.save(persistedEntity);
     }
 
-    /**
-     * Verwijderd een Genre uit de mock-database op basis van het id
-     *
-     * @param id
-     */
     public void deleteGenre(Long id) {
-        try {
-            Genre existingGenreEntity = findGenreById(id);
-            genreRepository.remove(existingGenreEntity);
-        } catch (IndexOutOfBoundsException e) {
-        }
-    }
-
-    /**
-     * Een database maakt automatisch de volgende, unieke Primary Key voor je.
-     * Deze helper-methode bootst die functionaliteit na in de ArrayList.
-     */
-    private Long findNextId(ArrayList<Genre> genreRepository) {
-        Long highest = 0L;
-
-        if (!genreRepository.isEmpty()) {
-            for (Genre genre : genreRepository) {
-                if (genre.getId() > highest) {
-                    highest = genre.getId();
-                }
-            }
-        }
-
-        return highest + 1;
+        this.ensureExistsById(id);
+        this.repository.deleteById(id);
     }
 }

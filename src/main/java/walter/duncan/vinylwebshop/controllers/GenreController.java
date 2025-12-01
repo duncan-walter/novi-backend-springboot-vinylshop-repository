@@ -4,77 +4,58 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import walter.duncan.vinylwebshop.entities.Genre;
+import walter.duncan.vinylwebshop.entities.GenreEntity;
+import walter.duncan.vinylwebshop.helpers.UrlHelper;
 import walter.duncan.vinylwebshop.services.GenreService;
 
-import java.net.URI;
 import java.util.List;
 
 @RestController
 @RequestMapping("/genres")
 public class GenreController {
+    private final UrlHelper urlHelper;
     private final GenreService genreService;
 
-    public GenreController(GenreService genreService) {
+    public GenreController(UrlHelper urlHelper, GenreService genreService) {
+        this.urlHelper = urlHelper;
         this.genreService = genreService;
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK) // Ik weet dat GetMapping dit automatisch doet, maar hoe explicieter hoe beter!
-    public ResponseEntity<Genre> getGenreById(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(genreService.findGenreById(id));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<GenreEntity> getGenreById(@PathVariable Long id) {
+        return ResponseEntity.ok(this.genreService.findGenreById(id));
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<List<Genre>> getGenres() {
-        try {
-            return ResponseEntity.ok(this.genreService.findAllGenres());
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<List<GenreEntity>> getGenres() {
+        return ResponseEntity.ok(this.genreService.findAllGenres());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<Genre> createGenre(@RequestBody Genre genre) {
-        try {
-            var createdGenre = this.genreService.createGenre(genre);
-            var location = new URI(String.format("http://localhost:8080/genres/%s", createdGenre.getId()));
+    public ResponseEntity<GenreEntity> createGenre(@RequestBody GenreEntity genre) {
+        var genreEntity = this.genreService.createGenre(genre);
+        var location = this.urlHelper.getResourceUri(genreEntity.getId());
 
-            return ResponseEntity.created(location).body(createdGenre);
-        } catch (Exception e) {
-            return ResponseEntity.unprocessableEntity().build();
-        }
+        return ResponseEntity.created(location).body(genreEntity);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Genre> updateGenre(@PathVariable Long id, @RequestBody Genre genre) {
-        try {
-            var updatedGenre = this.genreService.updateGenre(id, genre);
-            var location = new URI(String.format("http://localhost:8080/genres/%s", id));
+    public ResponseEntity<GenreEntity> updateGenre(@PathVariable Long id, @RequestBody GenreEntity genre) {
+        var updatedGenre = this.genreService.updateGenre(id, genre);
+        var location = this.urlHelper.getResourceUri(updatedGenre.getId());
 
-            return ResponseEntity.ok().location(location).body(updatedGenre);
-        } catch (Exception e) {
-            return ResponseEntity.unprocessableEntity().build();
-        }
+        return ResponseEntity.ok().location(location).body(updatedGenre);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<Object> deleteGenre(@PathVariable Long id) {
-        try {
-            this.genreService.deleteGenre(id);
+        this.genreService.deleteGenre(id);
 
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            // De aangeleverde service gooit deze exception nooit, maar voor de netheid zet ik dit er toch bij.
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.noContent().build();
     }
 }
